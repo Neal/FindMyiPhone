@@ -160,7 +160,7 @@ class FindMyiPhone {
 	 * Lock Device
 	 * 
 	 */
-	public function lost_device($device_id, $passcode, $owner_phone_number = '911', $sound = false, $text = 'This iPhone has been lost. Please call me.') {
+	public function lost_device($device_id, $passcode, $owner_phone_number = '911', $sound = true, $text = 'This iPhone has been lost. Please call me.') {
 		if(!is_string($device_id)) throw new FindMyiPhoneException('Expected $device_id to be a string');
 		if(!is_string($passcode)) throw new FindMyiPhoneException('Expected $passcode to be a string');
 		if(!is_string($owner_phone_number)) throw new FindMyiPhoneException('Expected $owner_phone_number to be a string');
