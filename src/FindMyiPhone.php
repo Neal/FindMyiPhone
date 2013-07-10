@@ -99,6 +99,9 @@ class FindMyiPhone {
 	 * 
 	 */
 	public function play_sound($device_id, $subject = 'Find My iPhone Alert') {
+		if(!is_string($device_id)) throw new Exception('Expected $device_id to be a string');
+		if(!is_string($subject)) throw new Exception('Expected $subject to be a string');
+
 		$post_data = json_encode(array(
 			'clientContext' => $this->client_context,
 			'serverContext' => $this->server_context,
@@ -115,6 +118,11 @@ class FindMyiPhone {
 	 * 
 	 */
 	public function send_message($device_id, $text, $sound = false, $subject = 'Important Message') {
+		if(!is_string($device_id)) throw new Exception('Expected $device_id to be a string');
+		if(!is_string($text)) throw new Exception('Expected $text to be a string');
+		if(!is_bool($sound)) throw new Exception('Expected $sound to be a bool');
+		if(!is_string($subject)) throw new Exception('Expected $subject to be a string');
+
 		$post_data = json_encode(array(
 			'clientContext' => $this->client_context,
 			'serverContext' => $this->server_context,
@@ -134,16 +142,22 @@ class FindMyiPhone {
 	 * Lock Device
 	 * 
 	 */
-	public function lost_device($device_id, $passcode, $phone_number = '0000000000', $alarm = false, $text = 'This iPhone has been lost. Please call me.') {
+	public function lost_device($device_id, $passcode, $owner_phone_number = '911', $sound = false, $text = 'This iPhone has been lost. Please call me.') {
+		if(!is_string($device_id)) throw new Exception('Expected $device_id to be a string');
+		if(!is_string($passcode)) throw new Exception('Expected $passcode to be a string');
+		if(!is_string($owner_phone_number)) throw new Exception('Expected $owner_phone_number to be a string');
+		if(!is_bool($sound)) throw new Exception('Expected $sound to be a bool');
+		if(!is_string($text)) throw new Exception('Expected $text to be a string');
+
 		$post_data = json_encode(array(
 			'clientContext' => $this->client_context,
 			'serverContext' => $this->server_context,
 			'device' => $device_id,
 			'emailUpdates' => $this->email_updates,
 			'lostModeEnabled' => true,
-			'ownerNbr' => $phone_number,
+			'ownerNbr' => $owner_phone_number,
 			'passcode' => $passcode,
-			'sound' => $alarm,
+			'sound' => $sound,
 			'text' => $text,
 			'trackingEnabled' => true,
 			'userText' => true
@@ -158,6 +172,9 @@ class FindMyiPhone {
 	 * 
 	 */
 	public function remote_lock($device_id, $passcode) {
+		if(!is_string($device_id)) throw new Exception('Expected $device_id to be a string');
+		if(!is_string($passcode)) throw new Exception('Expected $passcode to be a string');
+
 		$post_data = json_encode(array(
 			'clientContext' => $this->client_context,
 			'serverContext' => $this->server_context,
@@ -175,6 +192,8 @@ class FindMyiPhone {
 	 * 
 	 */
 	public function remote_wipe($device_id) {
+		if(!is_string($device_id)) throw new Exception('Expected $device_id to be a string');
+
 		$post_data = json_encode(array(
 			'clientContext' => $this->client_context,
 			'serverContext' => $this->server_context,
@@ -190,14 +209,15 @@ class FindMyiPhone {
 	 * Locate Device
 	 * 
 	 */
-	public function locate_device($device_id, $timeout = 180) {
-		$start = time();
+	public function locate_device($device, $timeout = 120) {
+		if(!is_integer($device)) throw new Exception('Expected $device to be an integer');
 
-		while(!$this->devices[$device]->location->latitude || !$this->devices[$device]->location->longitude) {
-			if((time() - $start) > $timeout) {
+		$start = time();
+		while (!$this->devices[$device]->location->locationFinished) {
+			if ((time() - $start) > intval($timeout)) {
 				throw new Exception('Failed to locate device! Request timed out.');
 			}
-			sleep(3);
+			sleep(5);
 			$this->update_device_list();
 		}
 
@@ -214,7 +234,7 @@ class FindMyiPhone {
 			'clientContext' => $this->client_context
 		));
 
-		foreach(json_decode($this->make_request("/fmipservice/device/{$this->username}/initClient", $post_data))->content as $device) {
+		foreach (json_decode($this->make_request("/fmipservice/device/{$this->username}/initClient", $post_data))->content as $device) {
 			array_push($this->devices, $device);
 		}
 	}
@@ -229,6 +249,10 @@ class FindMyiPhone {
 	 * @return HTTP response
 	 */
 	private function make_request($url, $post_data, $headers = array(), $return_headers = false) {
+		if(!is_string($url)) throw new Exception('Expected $url to be a string');
+		if(!$this->is_json($post_data)) throw new Exception('Expected $post_data to be json');
+		if(!is_array($headers)) throw new Exception('Expected $headers to be an array');
+		if(!is_bool($return_headers)) throw new Exception('Expected $return_headers to be a bool');
 
 		array_push($headers, 'Accept-Language: en-us');
 		array_push($headers, 'Content-Type: application/json; charset=utf-8');
@@ -277,6 +301,14 @@ class FindMyiPhone {
 			}
 		}
 		return $headers;
+	}
+
+	/**
+	 * Finds whether a variable is json.
+	 */
+	private function is_json($string) {
+		json_decode($string);
+		return (json_last_error() == JSON_ERROR_NONE);
 	}
 }
 
