@@ -10,16 +10,13 @@ class FindMyiPhone {
 	private $username;
 	private $password;
 
-	// array to store all the devices on the account
 	public $devices = array();
 
-	// whether to send an email or not (only works for some requests)
 	private $email_updates = true;
 
-	// initial host that gives us the user host partition
 	private $url_host = 'fmipmobile.icloud.com';
+	private $scope;
 
-	// common in every request
 	private $client_context = array(
 		'appName' => 'FindMyiPhone',
 		'appVersion' => '2.0.2',
@@ -31,7 +28,6 @@ class FindMyiPhone {
 		'productType' => 'iPhone5,1'
 	);
 
-	// also common in every request
 	private $server_context = array(
 		'callbackIntervalInMS' => 10000,
 		'classicUser' => false,
@@ -67,7 +63,7 @@ class FindMyiPhone {
 		$this->username = $username;
 		$this->password = $password;
 
-		$this->url_host = $this->get_url_host();
+		$this->init_client();
 	}
 
 
@@ -83,14 +79,36 @@ class FindMyiPhone {
 
 
 	/**
-	 * Get the url host for the user's partition.
+	 * Init Client
+	 * 
 	 */
-	private function get_url_host() {
+	private function init_client() {
 		$post_data = json_encode(array(
 			'clientContext' => $this->client_context
 		));
 
-		return $this->parse_curl_headers($this->make_request("/fmipservice/device/{$this->username}/initClient", $post_data, array(), true))['X-Apple-MMe-Host'];
+		$headers = $this->parse_curl_headers($this->make_request("/fmipservice/device/{$this->username}/initClient", $post_data, array(), true));
+
+		$this->url_host = $headers['X-Apple-MMe-Host'];
+		$this->scope = $headers['X-Apple-MMe-Scope'];
+
+		$this->refresh_client();
+	}
+
+
+	/**
+	 * Refresh Client
+	 * 
+	 */
+	public function refresh_client() {
+		$post_data = json_encode(array(
+			'clientContext' => $this->client_context,
+			'serverContext' => $this->server_context
+		));
+
+		foreach (json_decode($this->make_request("/fmipservice/device/{$this->scope}/refreshClient", $post_data))->content as $id => $device) {
+			$this->devices[$id] = $device;
+		}
 	}
 
 
@@ -109,7 +127,7 @@ class FindMyiPhone {
 			'subject' => $subject
 		));
 
-		return json_decode($this->make_request("/fmipservice/device/{$this->username}/playSound", $post_data))->content[0]->msg;
+		return json_decode($this->make_request("/fmipservice/device/{$this->scope}/playSound", $post_data))->content[0]->msg;
 	}
 
 
@@ -134,7 +152,7 @@ class FindMyiPhone {
 			'userText' => true
 		));
 
-		return json_decode($this->make_request("/fmipservice/device/{$this->username}/sendMessage", $post_data))->content[0]->msg;
+		return json_decode($this->make_request("/fmipservice/device/{$this->scope}/sendMessage", $post_data))->content[0]->msg;
 	}
 
 
@@ -163,7 +181,7 @@ class FindMyiPhone {
 			'userText' => true
 		));
 
-		return json_decode($this->make_request("/fmipservice/device/{$this->username}/lostDevice", $post_data))->content[0]->lostDevice;
+		return json_decode($this->make_request("/fmipservice/device/{$this->scope}/lostDevice", $post_data))->content[0]->lostDevice;
 	}
 
 
@@ -183,7 +201,7 @@ class FindMyiPhone {
 			'passcode' => $passcode
 		));
 
-		return json_decode($this->make_request("/fmipservice/device/{$this->username}/remoteLock", $post_data))->content[0]->remoteLock;
+		return json_decode($this->make_request("/fmipservice/device/{$this->scope}/remoteLock", $post_data))->content[0]->remoteLock;
 	}
 
 
@@ -201,7 +219,7 @@ class FindMyiPhone {
 			'emailUpdates' => $this->email_updates
 		));
 
-		return json_decode($this->make_request("/fmipservice/device/{$this->username}/remoteWipe", $post_data))->content[0]->remoteWipe;
+		return json_decode($this->make_request("/fmipservice/device/{$this->scope}/remoteWipe", $post_data))->content[0]->remoteWipe;
 	}
 
 
@@ -218,25 +236,10 @@ class FindMyiPhone {
 				throw new Exception('Failed to locate device! Request timed out.');
 			}
 			sleep(5);
-			$this->update_device_list();
+			$this->refresh_client();
 		}
 
 		return $this->devices[$device]->location;
-	}
-
-
-	/**
-	 * Update device list from Find My iPhone and store them in $this->devices.
-	 * 
-	 */
-	public function update_device_list() {
-		$post_data = json_encode(array(
-			'clientContext' => $this->client_context
-		));
-
-		foreach (json_decode($this->make_request("/fmipservice/device/{$this->username}/initClient", $post_data))->content as $device) {
-			array_push($this->devices, $device);
-		}
 	}
 
 
