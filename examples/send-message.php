@@ -1,6 +1,6 @@
 <?php
 
-require __dir__ . '/../src/FindMyiPhone.php';
+require __dir__ . '/../include/classes/FindMyiPhone.php';
 
 try {
 

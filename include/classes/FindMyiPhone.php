@@ -14,7 +14,7 @@ class FindMyiPhone {
 
 	private $email_updates = true;
 
-	private $url_host = 'fmipmobile.icloud.com';
+	private $host = 'fmipmobile.icloud.com';
 	private $scope;
 
 	private $client_context = array(
@@ -87,9 +87,9 @@ class FindMyiPhone {
 			'clientContext' => $this->client_context
 		));
 
-		$headers = $this->parse_curl_headers($this->make_request("/fmipservice/device/{$this->username}/initClient", $post_data, array(), true));
+		$headers = $this->parse_curl_headers($this->make_request('initClient', $post_data, true));
 
-		$this->url_host = $headers['X-Apple-MMe-Host'];
+		$this->host = $headers['X-Apple-MMe-Host'];
 		$this->scope = $headers['X-Apple-MMe-Scope'];
 
 		$this->refresh_client();
@@ -106,7 +106,7 @@ class FindMyiPhone {
 			'serverContext' => $this->server_context
 		));
 
-		foreach (json_decode($this->make_request("/fmipservice/device/{$this->scope}/refreshClient", $post_data))->content as $id => $device) {
+		foreach (json_decode($this->make_request('refreshClient', $post_data))->content as $id => $device) {
 			$this->devices[$id] = $device;
 		}
 	}
@@ -127,7 +127,7 @@ class FindMyiPhone {
 			'subject' => $subject
 		));
 
-		return json_decode($this->make_request("/fmipservice/device/{$this->scope}/playSound", $post_data))->content[0]->msg;
+		return json_decode($this->make_request('playSound', $post_data))->content[0]->msg;
 	}
 
 
@@ -152,7 +152,7 @@ class FindMyiPhone {
 			'userText' => true
 		));
 
-		return json_decode($this->make_request("/fmipservice/device/{$this->scope}/sendMessage", $post_data))->content[0]->msg;
+		return json_decode($this->make_request('sendMessage', $post_data))->content[0]->msg;
 	}
 
 
@@ -163,6 +163,7 @@ class FindMyiPhone {
 	public function lost_device($device_id, $passcode, $owner_phone_number = '911', $sound = true, $text = 'This iPhone has been lost. Please call me.') {
 		if(!is_string($device_id)) throw new FindMyiPhoneException('Expected $device_id to be a string');
 		if(!is_string($passcode)) throw new FindMyiPhoneException('Expected $passcode to be a string');
+		if(strlen($passcode) !== 4) throw new FindMyiPhoneException('Expected $passcode to be 4 characters long');
 		if(!is_string($owner_phone_number)) throw new FindMyiPhoneException('Expected $owner_phone_number to be a string');
 		if(!is_bool($sound)) throw new FindMyiPhoneException('Expected $sound to be a bool');
 		if(!is_string($text)) throw new FindMyiPhoneException('Expected $text to be a string');
@@ -181,7 +182,7 @@ class FindMyiPhone {
 			'userText' => true
 		));
 
-		return json_decode($this->make_request("/fmipservice/device/{$this->scope}/lostDevice", $post_data))->content[0]->lostDevice;
+		return json_decode($this->make_request('lostDevice', $post_data))->content[0]->lostDevice;
 	}
 
 
@@ -192,6 +193,7 @@ class FindMyiPhone {
 	public function remote_lock($device_id, $passcode) {
 		if(!is_string($device_id)) throw new FindMyiPhoneException('Expected $device_id to be a string');
 		if(!is_string($passcode)) throw new FindMyiPhoneException('Expected $passcode to be a string');
+		if(strlen($passcode) !== 4) throw new FindMyiPhoneException('Expected $passcode to be 4 characters long');
 
 		$post_data = json_encode(array(
 			'clientContext' => $this->client_context,
@@ -201,7 +203,7 @@ class FindMyiPhone {
 			'passcode' => $passcode
 		));
 
-		return json_decode($this->make_request("/fmipservice/device/{$this->scope}/remoteLock", $post_data))->content[0]->remoteLock;
+		return json_decode($this->make_request('remoteLock', $post_data))->content[0]->remoteLock;
 	}
 
 
@@ -219,7 +221,7 @@ class FindMyiPhone {
 			'emailUpdates' => $this->email_updates
 		));
 
-		return json_decode($this->make_request("/fmipservice/device/{$this->scope}/remoteWipe", $post_data))->content[0]->remoteWipe;
+		return json_decode($this->make_request('remoteWipe', $post_data))->content[0]->remoteWipe;
 	}
 
 
@@ -229,6 +231,7 @@ class FindMyiPhone {
 	 */
 	public function locate_device($device, $timeout = 120) {
 		if(!is_integer($device)) throw new FindMyiPhoneException('Expected $device to be an integer');
+		if(!isset($this->devices[$device])) $this->refresh_client();
 
 		$start = time();
 		while (!$this->devices[$device]->location->locationFinished) {
@@ -245,17 +248,18 @@ class FindMyiPhone {
 
 	/**
 	 * Make request to the Find My iPhone server.
-	 * @param $url - the url endpoint
+	 * @param $method - the method
 	 * @param $post_data - the POST data
-	 * @param $headers - optional headers to send
 	 * @param $return_headers - also return headers when true
+	 * @param $headers - optional headers to send
 	 * @return HTTP response
 	 */
-	private function make_request($url, $post_data, $headers = array(), $return_headers = false) {
-		if(!is_string($url)) throw new FindMyiPhoneException('Expected $url to be a string');
+	private function make_request($method, $post_data, $return_headers = false, $headers = array()) {
+		if(!is_string($method)) throw new FindMyiPhoneException('Expected $method to be a string');
 		if(!$this->is_json($post_data)) throw new FindMyiPhoneException('Expected $post_data to be json');
 		if(!is_array($headers)) throw new FindMyiPhoneException('Expected $headers to be an array');
 		if(!is_bool($return_headers)) throw new FindMyiPhoneException('Expected $return_headers to be a bool');
+		if(!isset($this->scope)) $this->scope = $this->username;
 
 		array_push($headers, 'Accept-Language: en-us');
 		array_push($headers, 'Content-Type: application/json; charset=utf-8');
@@ -276,7 +280,7 @@ class FindMyiPhone {
 			CURLOPT_POSTFIELDS => $post_data,
 			CURLOPT_HTTPHEADER => $headers,
 			CURLOPT_HEADER => $return_headers,
-			CURLOPT_URL => 'https://' . $this->url_host . $url,
+			CURLOPT_URL => sprintf("https://%s/fmipservice/device/%s/%s", $this->host, $this->scope, $method),
 			CURLOPT_USERPWD => $this->username . ':' . $this->password,
 			CURLOPT_USERAGENT => 'FindMyiPhone/294 CFNetwork/655 Darwin/14.0.0'
 		));
