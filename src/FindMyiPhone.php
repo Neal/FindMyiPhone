@@ -306,8 +306,8 @@ class FindMyiPhone {
 	/**
 	 * Finds whether a variable is json.
 	 */
-	private function is_json($string) {
-		json_decode($string);
+	private function is_json($var) {
+		json_decode($var);
 		return (json_last_error() == JSON_ERROR_NONE);
 	}
 }
