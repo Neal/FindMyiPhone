@@ -127,7 +127,7 @@ class FindMyiPhone {
 			'subject' => $subject
 		));
 
-		return json_decode($this->make_request('playSound', $post_data))->content[0]->msg;
+		return json_decode($this->make_request('playSound', $post_data))->content[0]->snd;
 	}
 
 
@@ -187,6 +187,53 @@ class FindMyiPhone {
 
 
 	/**
+	 * Notify When Found
+	 * 
+	 */
+	public function notify_when_found($device_id, $notify = true) {
+		if(!is_string($device_id)) throw new FindMyiPhoneException('Expected $device_id to be a string');
+		if(!is_string($notify)) throw new FindMyiPhoneException('Expected $notify to be a boolean');
+
+		$post_data = json_encode(array(
+			'clientContext' => $this->client_context,
+			'serverContext' => $this->server_context,
+			'device' => $device_id,
+			'lostModeEnabled' => $notify
+		));
+
+		return json_decode($this->make_request('saveLocFoundPref', $post_data))->content[0]->locFoundEnabled;
+	}
+
+
+	/**
+	 * Lock and Message
+	 * 
+	 */
+	public function lock_and_message($device_id, $passcode, $text, $sound = true, $title = 'Find My iPhone Alert') {
+		if(!is_string($device_id)) throw new FindMyiPhoneException('Expected $device_id to be a string');
+		if(!is_string($passcode)) throw new FindMyiPhoneException('Expected $passcode to be a string');
+		if(strlen($passcode) !== 4) throw new FindMyiPhoneException('Expected $passcode to be 4 characters long');
+		if(!is_string($text)) throw new FindMyiPhoneException('Expected $text to be a string');
+		if(!is_bool($sound)) throw new FindMyiPhoneException('Expected $sound to be a bool');
+		if(!is_string($title)) throw new FindMyiPhoneException('Expected $title to be a string');
+
+		$post_data = json_encode(array(
+			'clientContext' => $this->client_context,
+			'serverContext' => $this->server_context,
+			'device' => $device_id,
+			'emailUpdates' => $this->email_updates,
+			'passcode' => $passcode,
+			'sound' => $sound,
+			'text' => $text,
+			'title' => $title,
+			'userText' => true
+		));
+
+		return json_decode($this->make_request('lockAndMessage', $post_data))->content[0]->remoteLock;
+	}
+
+
+	/**
 	 * Remote Lock
 	 * 
 	 */
@@ -211,13 +258,18 @@ class FindMyiPhone {
 	 * Remote Wipe
 	 * 
 	 */
-	public function remote_wipe($device_id) {
+	public function remote_wipe($device_id, $passcode, $text) {
 		if(!is_string($device_id)) throw new FindMyiPhoneException('Expected $device_id to be a string');
+		if(!is_string($passcode)) throw new FindMyiPhoneException('Expected $passcode to be a string');
+		if(strlen($passcode) !== 4) throw new FindMyiPhoneException('Expected $passcode to be 4 characters long');
+		if(!is_string($text)) throw new FindMyiPhoneException('Expected $text to be a string');
 
 		$post_data = json_encode(array(
 			'clientContext' => $this->client_context,
 			'serverContext' => $this->server_context,
 			'device' => $device_id,
+			'passcode' => $passcode,
+			'text' => $text,
 			'emailUpdates' => $this->email_updates
 		));
 
