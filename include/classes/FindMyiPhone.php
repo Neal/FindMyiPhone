@@ -19,8 +19,8 @@ class FindMyiPhone {
 
 	private $client_context = array(
 		'appName' => 'FindMyiPhone',
-		'appVersion' => '2.0.2',
-		'buildVersion' => '294',
+		'appVersion' => '2.0.3',
+		'buildVersion' => '325',
 		'clientTimestamp' => 0,
 		'deviceUDID' => null,
 		'inactiveTime' => 1,
