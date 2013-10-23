@@ -19,13 +19,13 @@ class FindMyiPhone {
 
 	private $client_context = array(
 		'appName' => 'FindMyiPhone',
-		'appVersion' => '2.0.3',
-		'buildVersion' => '325',
+		'appVersion' => '3.0',
+		'buildVersion' => '376',
 		'clientTimestamp' => 0,
 		'deviceUDID' => null,
 		'inactiveTime' => 1,
-		'osVersion' => '6.1.4',
-		'productType' => 'iPhone5,1'
+		'osVersion' => '7.0.3',
+		'productType' => 'iPhone6,1'
 	);
 
 	private $server_context = array(
@@ -334,7 +334,7 @@ class FindMyiPhone {
 			CURLOPT_HEADER => $return_headers,
 			CURLOPT_URL => sprintf("https://%s/fmipservice/device/%s/%s", $this->host, $this->scope, $method),
 			CURLOPT_USERPWD => $this->username . ':' . $this->password,
-			CURLOPT_USERAGENT => 'FindMyiPhone/294 CFNetwork/655 Darwin/14.0.0'
+			CURLOPT_USERAGENT => 'FindMyiPhone/376 CFNetwork/672.0.8 Darwin/14.0.0'
 		));
 
 		$http_result = curl_exec($curl);
