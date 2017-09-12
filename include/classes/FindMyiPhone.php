@@ -89,8 +89,8 @@ class FindMyiPhone {
 
 		$headers = $this->parse_curl_headers($this->make_request('initClient', $post_data, true));
 
-		$this->host = $headers['X-Apple-MMe-Host'];
-		$this->scope = $headers['X-Apple-MMe-Scope'];
+		$this->host = isset($headers['X-Apple-MMe-Host'])?$headers['X-Apple-MMe-Host']:$this->host;
+		$this->scope = isset($headers['X-Apple-MMe-Scope'])?$headers['X-Apple-MMe-Scope']:'';
 
 		$this->refresh_client();
 	}
@@ -372,5 +372,3 @@ class FindMyiPhone {
 }
 
 class FindMyiPhoneException extends Exception {}
-
-?>
